@@ -35,7 +35,7 @@ func (m model) Init() tea.Cmd {
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tickMsg:
-		if m.currentBeat == 4 {
+		if m.currentBeat >= m.totalBeats {
 			m.currentBeat = 1
 		} else {
 			m.currentBeat++
@@ -57,6 +57,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "down", "j":
 			m.bpm -= 1
 			return m, nil
+
+		case "right", "l":
+			m.totalBeats += 1
+			return m, nil
+
+		case "left", "h":
+			m.totalBeats -= 1
+			return m, nil
 		}
 	}
 
@@ -64,18 +72,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	bpmIndicator := strconv.Itoa(int(m.bpm)) + " bpm"
+	header := strconv.Itoa(int(m.bpm)) + " bpm | " + strconv.Itoa(m.totalBeats) + " beats"
 
-	var beatIndicator string
+	var indicator string
 	for i := 1; i <= m.totalBeats; i++ {
 		if i == m.currentBeat {
-			beatIndicator += "■ "
+			indicator += "■ "
 		} else {
-			beatIndicator += "▪ "
+			indicator += "▪ "
 		}
 	}
 
-	return bpmIndicator + "\n" + beatIndicator
+	return header + "\n" + indicator + "\n"
 }
 
 func tick(t time.Duration) tea.Cmd {
