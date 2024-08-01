@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/gopxl/beep"
 	"github.com/gopxl/beep/speaker"
@@ -55,31 +56,31 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		return m, nil
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c", "q":
+		switch {
+		case key.Matches(msg, DefaultKeyMap.Quit):
 			return m, tea.Quit
 
-		case "up", "k":
+		case key.Matches(msg, DefaultKeyMap.Up):
 			m.bpm = clamp(20, 200, m.bpm+1)
 
 			return m, nil
 
-		case "down", "j":
+		case key.Matches(msg, DefaultKeyMap.Down):
 			m.bpm = clamp(20, 200, m.bpm-1)
 
 			return m, nil
 
-		case "right", "l":
+		case key.Matches(msg, DefaultKeyMap.Right):
 			m.totalBeats = clamp(1, 10, m.totalBeats+1)
 
 			return m, nil
 
-		case "left", "h":
+		case key.Matches(msg, DefaultKeyMap.Left):
 			m.totalBeats = clamp(1, 10, m.totalBeats-1)
 
 			return m, nil
 
-		case " ", "p":
+		case key.Matches(msg, DefaultKeyMap.Play):
 			m.playing = !m.playing
 
 			if m.playing {
