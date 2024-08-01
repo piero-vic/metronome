@@ -25,11 +25,16 @@ type model struct {
 	bpm         int
 	currentBeat int
 	totalBeats  int
+	playing     bool
 	buffer      *beep.Buffer
 }
 
 func (m model) Init() tea.Cmd {
-	return tick(bpmToDuration(m.bpm))
+	if m.playing {
+		return tick(bpmToDuration(m.bpm))
+	}
+
+	return nil
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -44,7 +49,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		streamer := m.buffer.Streamer(0, m.buffer.Len())
 		speaker.Play(streamer)
 
-		return m, tick(bpmToDuration(m.bpm))
+		if m.playing {
+			return m, tick(bpmToDuration(m.bpm))
+		}
+
+		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
@@ -69,6 +78,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.totalBeats = clamp(1, 10, m.totalBeats-1)
 
 			return m, nil
+
+		case " ", "p":
+			m.playing = !m.playing
+
+			if m.playing {
+				return m, tick(bpmToDuration(m.bpm))
+			}
+
+			return m, nil
 		}
 	}
 
@@ -76,7 +94,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	header := strconv.Itoa(int(m.bpm)) + " bpm | " + strconv.Itoa(m.totalBeats) + " beats"
+	var playingStatus string
+	if m.playing {
+		playingStatus = "Playing"
+	} else {
+		playingStatus = "Paused"
+	}
+
+	header := strconv.Itoa(int(m.bpm)) + " bpm | " +
+		strconv.Itoa(m.totalBeats) + " beats | " +
+		playingStatus
 
 	var indicator string
 	for i := 1; i <= m.totalBeats; i++ {
@@ -129,6 +156,7 @@ func main() {
 		bpm:         60,
 		currentBeat: 0,
 		totalBeats:  4,
+		playing:     false,
 		buffer:      buffer,
 	}
 
