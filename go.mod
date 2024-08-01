@@ -3,6 +3,7 @@ module github.com/piero-vic/metronome
 go 1.22.5
 
 require (
+	github.com/charmbracelet/bubbles v0.18.0
 	github.com/charmbracelet/bubbletea v0.26.6
 	github.com/gopxl/beep v1.4.1
 )
