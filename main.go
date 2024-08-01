@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/gopxl/beep"
@@ -28,6 +29,7 @@ type model struct {
 	totalBeats  int
 	playing     bool
 	buffer      *beep.Buffer
+	help        help.Model
 }
 
 func (m model) Init() tea.Cmd {
@@ -115,7 +117,7 @@ func (m model) View() string {
 		}
 	}
 
-	return header + "\n" + indicator + "\n"
+	return header + "\n" + indicator + "\n" + m.help.View(DefaultKeyMap) + "\n"
 }
 
 func tick(t time.Duration) tea.Cmd {
@@ -159,6 +161,7 @@ func main() {
 		totalBeats:  4,
 		playing:     false,
 		buffer:      buffer,
+		help:        help.New(),
 	}
 
 	if _, err := tea.NewProgram(m).Run(); err != nil {
