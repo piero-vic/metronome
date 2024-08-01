@@ -51,19 +51,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case "up", "k":
-			m.bpm += 1
+			m.bpm = clamp(20, 200, m.bpm+1)
+
 			return m, nil
 
 		case "down", "j":
-			m.bpm -= 1
+			m.bpm = clamp(20, 200, m.bpm-1)
+
 			return m, nil
 
 		case "right", "l":
-			m.totalBeats += 1
+			m.totalBeats = clamp(1, 10, m.totalBeats+1)
+
 			return m, nil
 
 		case "left", "h":
-			m.totalBeats -= 1
+			m.totalBeats = clamp(1, 10, m.totalBeats-1)
+
 			return m, nil
 		}
 	}
@@ -94,6 +98,18 @@ func tick(t time.Duration) tea.Cmd {
 
 func bpmToDuration(bpm int) time.Duration {
 	return time.Duration((60 / float32(bpm)) * float32(time.Second))
+}
+
+func clamp(min, max, val int) int {
+	if val < min {
+		return min
+	}
+
+	if val > max {
+		return max
+	}
+
+	return val
 }
 
 func main() {
