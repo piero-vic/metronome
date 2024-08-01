@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/gopxl/beep"
 	"github.com/gopxl/beep/speaker"
 	"github.com/gopxl/beep/wav"
@@ -97,6 +98,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
+	bpmStatus := strconv.Itoa(int(m.bpm)) + " bpm"
+	beatsStatus := strconv.Itoa(m.totalBeats) + " beats"
 	var playingStatus string
 	if m.playing {
 		playingStatus = "Playing"
@@ -104,20 +107,24 @@ func (m model) View() string {
 		playingStatus = "Paused"
 	}
 
-	header := strconv.Itoa(int(m.bpm)) + " bpm | " +
-		strconv.Itoa(m.totalBeats) + " beats | " +
-		playingStatus
-
 	var indicator string
 	for i := 1; i <= m.totalBeats; i++ {
 		if i == m.currentBeat {
-			indicator += "■ "
+			indicator += activeIndicatorStyle.Render("■ ")
 		} else {
 			indicator += "▪ "
 		}
 	}
 
-	return header + "\n" + indicator + "\n" + m.help.View(DefaultKeyMap) + "\n"
+	return wrapper.Render(
+		lipgloss.JoinVertical(
+			lipgloss.Left,
+			headerStyle.Render("metronome"),
+			statusStyle.Render(bpmStatus+" / "+beatsStatus+" / "+playingStatus),
+			indicatorStyle.Render(indicator),
+			m.help.View(DefaultKeyMap),
+		),
+	)
 }
 
 func tick(t time.Duration) tea.Cmd {
