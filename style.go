@@ -20,3 +20,9 @@ var indicatorStyle = lipgloss.NewStyle().
 
 var activeIndicatorStyle = lipgloss.NewStyle().
 	Foreground(lipgloss.Color("3"))
+
+var separatorStyle = lipgloss.NewStyle().
+	Foreground(lipgloss.AdaptiveColor{
+		Light: "#DDDADA",
+		Dark:  "#3C3C3C",
+	})
