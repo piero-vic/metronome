@@ -124,6 +124,8 @@ func (m model) View() string {
 	} else {
 		playingStatus = "Paused"
 	}
+	separator := separatorStyle.Render(" • ")
+	status := bpmStatus + separator + beatsStatus + separator + playingStatus
 
 	var indicator string
 	for i := 1; i <= m.totalBeats; i++ {
@@ -138,7 +140,7 @@ func (m model) View() string {
 		lipgloss.JoinVertical(
 			lipgloss.Left,
 			headerStyle.Render("metronome"),
-			statusStyle.Render(bpmStatus+" / "+beatsStatus+" / "+playingStatus),
+			statusStyle.Render(status),
 			indicatorStyle.Render(indicator),
 			m.help.View(DefaultKeyMap),
 		),
