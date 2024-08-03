@@ -2,9 +2,7 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"log"
-	"os"
 	"strconv"
 	"time"
 
@@ -13,14 +11,17 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/gopxl/beep"
+	"github.com/gopxl/beep/flac"
 	"github.com/gopxl/beep/speaker"
-	"github.com/gopxl/beep/wav"
 
 	_ "embed"
 )
 
-//go:embed click.wav
-var click []byte
+//go:embed metronome-strong-pulse.flac
+var strongPulse []byte
+
+//go:embed metronome-weak-pulse.flac
+var weakPulse []byte
 
 type tickMsg struct {
 	time time.Time
@@ -28,13 +29,14 @@ type tickMsg struct {
 }
 
 type model struct {
-	bpm         int
-	currentBeat int
-	totalBeats  int
-	playing     bool
-	tag         int
-	buffer      *beep.Buffer
-	help        help.Model
+	bpm               int
+	currentBeat       int
+	totalBeats        int
+	playing           bool
+	tag               int
+	strongPulseBuffer *beep.Buffer
+	weakPulseBuffer   *beep.Buffer
+	help              help.Model
 }
 
 func (m model) Init() tea.Cmd {
@@ -62,7 +64,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.currentBeat++
 		}
 
-		streamer := m.buffer.Streamer(0, m.buffer.Len())
+		var streamer beep.StreamSeeker
+		if m.currentBeat == 1 {
+			streamer = m.strongPulseBuffer.Streamer(0, m.strongPulseBuffer.Len())
+		} else {
+			streamer = m.weakPulseBuffer.Streamer(0, m.weakPulseBuffer.Len())
+		}
+
 		speaker.Play(streamer)
 
 		m.tag++
@@ -160,29 +168,46 @@ func clamp(min, max, val int) int {
 }
 
 func main() {
-	streamer, format, err := wav.Decode(bytes.NewReader(click))
+	strongPulseStreamer, strongPulseFormat, err := flac.Decode(bytes.NewReader(strongPulse))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/100))
+	strongPulseBuffer := beep.NewBuffer(strongPulseFormat)
+	strongPulseBuffer.Append(strongPulseStreamer)
 
-	buffer := beep.NewBuffer(format)
-	buffer.Append(streamer)
+	if err = strongPulseStreamer.Close(); err != nil {
+		log.Fatal(err)
+	}
 
-	streamer.Close()
+	weakPulseStreamer, weakPulseFormat, err := flac.Decode(bytes.NewReader(weakPulse))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	weakPulseBuffer := beep.NewBuffer(weakPulseFormat)
+	weakPulseBuffer.Append(weakPulseStreamer)
+
+	if err = weakPulseStreamer.Close(); err != nil {
+		log.Fatal(err)
+	}
+
+	// NOTE: This assumes both strong and weak pulse have the same sample rate
+	if err = speaker.Init(strongPulseFormat.SampleRate, strongPulseFormat.SampleRate.N(time.Second/100)); err != nil {
+		log.Fatal(err)
+	}
 
 	m := model{
-		bpm:         60,
-		currentBeat: 0,
-		totalBeats:  4,
-		playing:     false,
-		buffer:      buffer,
-		help:        help.New(),
+		bpm:               60,
+		currentBeat:       0,
+		totalBeats:        4,
+		playing:           false,
+		strongPulseBuffer: strongPulseBuffer,
+		weakPulseBuffer:   weakPulseBuffer,
+		help:              help.New(),
 	}
 
 	if _, err := tea.NewProgram(m).Run(); err != nil {
-		fmt.Println("Oh no, it didn't work:", err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 }
