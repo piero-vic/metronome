@@ -22,20 +22,24 @@ import (
 //go:embed click.wav
 var click []byte
 
-type tickMsg time.Time
+type tickMsg struct {
+	time time.Time
+	tag  int
+}
 
 type model struct {
 	bpm         int
 	currentBeat int
 	totalBeats  int
 	playing     bool
+	tag         int
 	buffer      *beep.Buffer
 	help        help.Model
 }
 
 func (m model) Init() tea.Cmd {
 	if m.playing {
-		return tick(bpmToDuration(m.bpm))
+		return tick(bpmToDuration(m.bpm), m.tag)
 	}
 
 	return nil
@@ -44,6 +48,14 @@ func (m model) Init() tea.Cmd {
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tickMsg:
+		if !m.playing {
+			return m, nil
+		}
+
+		if msg.tag > 0 && msg.tag != m.tag {
+			return m, nil
+		}
+
 		if m.currentBeat >= m.totalBeats {
 			m.currentBeat = 1
 		} else {
@@ -53,11 +65,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		streamer := m.buffer.Streamer(0, m.buffer.Len())
 		speaker.Play(streamer)
 
-		if m.playing {
-			return m, tick(bpmToDuration(m.bpm))
-		}
-
-		return m, nil
+		m.tag++
+		return m, tick(bpmToDuration(m.bpm), m.tag)
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, DefaultKeyMap.Quit):
@@ -85,9 +94,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, DefaultKeyMap.Play):
 			m.playing = !m.playing
+			m.currentBeat = 0
 
 			if m.playing {
-				return m, tick(bpmToDuration(m.bpm))
+				return m, func() tea.Msg { return tickMsg{time.Now(), m.tag} }
 			}
 
 			return m, nil
@@ -127,9 +137,9 @@ func (m model) View() string {
 	)
 }
 
-func tick(t time.Duration) tea.Cmd {
+func tick(t time.Duration, tag int) tea.Cmd {
 	return tea.Tick(t, func(t time.Time) tea.Msg {
-		return tickMsg(t)
+		return tickMsg{t, tag}
 	})
 }
 
