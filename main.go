@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"log"
 	"strconv"
 	"time"
@@ -25,8 +26,8 @@ var (
 )
 
 const (
-	MIN_BPM = 20
-	MAX_BPM = 240
+	MIN_TEMPO = 20
+	MAX_TEMPO = 240
 
 	MIN_BEATS = 1
 	MAX_BEATS = 10
@@ -38,10 +39,11 @@ type tickMsg struct {
 }
 
 type model struct {
-	bpm               int
+	tempo   int
+	beats   int
+	playing bool
+
 	currentBeat       int
-	totalBeats        int
-	playing           bool
 	tag               int
 	strongPulseBuffer *beep.Buffer
 	weakPulseBuffer   *beep.Buffer
@@ -50,7 +52,7 @@ type model struct {
 
 func (m model) Init() tea.Cmd {
 	if m.playing {
-		return tick(bpmToDuration(m.bpm), m.tag)
+		return func() tea.Msg { return tickMsg{time.Now(), m.tag} }
 	}
 
 	return nil
@@ -67,7 +69,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-		if m.currentBeat >= m.totalBeats {
+		if m.currentBeat >= m.beats {
 			m.currentBeat = 1
 		} else {
 			m.currentBeat++
@@ -83,29 +85,29 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		speaker.Play(streamer)
 
 		m.tag++
-		return m, tick(bpmToDuration(m.bpm), m.tag)
+		return m, tick(bpmToDuration(m.tempo), m.tag)
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, DefaultKeyMap.Quit):
 			return m, tea.Quit
 
 		case key.Matches(msg, DefaultKeyMap.Up):
-			m.bpm = clamp(MIN_BPM, MAX_BPM, m.bpm+1)
+			m.tempo = clamp(MIN_TEMPO, MAX_TEMPO, m.tempo+1)
 
 			return m, nil
 
 		case key.Matches(msg, DefaultKeyMap.Down):
-			m.bpm = clamp(MIN_BPM, MAX_BPM, m.bpm-1)
+			m.tempo = clamp(MIN_TEMPO, MAX_TEMPO, m.tempo-1)
 
 			return m, nil
 
 		case key.Matches(msg, DefaultKeyMap.Right):
-			m.totalBeats = clamp(MIN_BEATS, MAX_BEATS, m.totalBeats+1)
+			m.beats = clamp(MIN_BEATS, MAX_BEATS, m.beats+1)
 
 			return m, nil
 
 		case key.Matches(msg, DefaultKeyMap.Left):
-			m.totalBeats = clamp(MIN_BEATS, MAX_BEATS, m.totalBeats-1)
+			m.beats = clamp(MIN_BEATS, MAX_BEATS, m.beats-1)
 
 			return m, nil
 
@@ -125,8 +127,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	bpmStatus := strconv.Itoa(int(m.bpm)) + " bpm"
-	beatsStatus := strconv.Itoa(m.totalBeats) + " beats"
+	tempoStatus := strconv.Itoa(int(m.tempo)) + " bpm"
+	beatStatus := strconv.Itoa(m.beats) + " beats"
 	var playingStatus string
 	if m.playing {
 		playingStatus = "Playing"
@@ -134,10 +136,10 @@ func (m model) View() string {
 		playingStatus = "Paused"
 	}
 	separator := separatorStyle.Render(" • ")
-	status := bpmStatus + separator + beatsStatus + separator + playingStatus
+	status := tempoStatus + separator + beatStatus + separator + playingStatus
 
 	var indicator string
-	for i := 1; i <= m.totalBeats; i++ {
+	for i := 1; i <= m.beats; i++ {
 		if i == m.currentBeat {
 			indicator += activeIndicatorStyle.Render("■ ")
 		} else {
@@ -208,11 +210,25 @@ func main() {
 		log.Fatal(err)
 	}
 
+	var (
+		tempo int
+		beats int
+		play  bool
+	)
+	flag.IntVar(&tempo, "t", 60, "tempo in bpm")
+	flag.IntVar(&tempo, "tempo", 60, "tempo in bpm")
+	flag.IntVar(&beats, "b", 4, "number of beats per measure")
+	flag.IntVar(&beats, "beats", 4, "number of beats per measure")
+	flag.BoolVar(&play, "p", false, "start playing")
+	flag.BoolVar(&play, "play", false, "start playing")
+	flag.Parse()
+
 	m := model{
-		bpm:               60,
+		tempo:   clamp(MIN_TEMPO, MAX_TEMPO, tempo),
+		beats:   clamp(MIN_BEATS, MAX_BEATS, beats),
+		playing: play,
+
 		currentBeat:       0,
-		totalBeats:        4,
-		playing:           false,
 		strongPulseBuffer: strongPulseBuffer,
 		weakPulseBuffer:   weakPulseBuffer,
 		help:              help.New(),
