@@ -3,7 +3,9 @@ package main
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"time"
 
@@ -33,6 +35,14 @@ const (
 	MAX_BEATS = 10
 )
 
+const usage = `Usage: metronome [options]
+
+Options:
+  -t, --tempo=[int]   set the tempo in BPM (default 60)
+  -b, --beats=[int]   set the number of beats per measure (default 4)
+  -p, --play          start the metronome automatically
+  -h, --help          print help`
+
 type tickMsg struct {
 	time time.Time
 	tag  int
@@ -43,11 +53,13 @@ type model struct {
 	beats   int
 	playing bool
 
-	currentBeat       int
-	tag               int
+	currentBeat int
+	tag         int
+
 	strongPulseBuffer *beep.Buffer
 	weakPulseBuffer   *beep.Buffer
-	help              help.Model
+
+	help help.Model
 }
 
 func (m model) Init() tea.Cmd {
@@ -191,6 +203,30 @@ func clamp(min, max, val int) int {
 }
 
 func main() {
+	flag.Usage = func() { fmt.Fprintf(os.Stderr, "%s\n", usage) }
+
+	var (
+		tempo    int
+		beats    int
+		play     bool
+		showHelp bool
+	)
+
+	flag.IntVar(&tempo, "t", 60, "set the tempo in bpm")
+	flag.IntVar(&tempo, "tempo", 60, "set the tempo in bpm")
+	flag.IntVar(&beats, "b", 4, "set the number of beats per measure")
+	flag.IntVar(&beats, "beats", 4, "set the number of beats per measure")
+	flag.BoolVar(&play, "p", false, "start the metronome automatically")
+	flag.BoolVar(&play, "play", false, "start the metronome automatically")
+	flag.BoolVar(&showHelp, "h", false, "print help")
+	flag.BoolVar(&showHelp, "help", false, "print help")
+	flag.Parse()
+
+	if showHelp {
+		flag.Usage()
+		os.Exit(0)
+	}
+
 	strongPulseStreamer, strongPulseFormat, err := flac.Decode(bytes.NewReader(strongPulse))
 	if err != nil {
 		log.Fatal(err)
@@ -220,28 +256,15 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var (
-		tempo int
-		beats int
-		play  bool
-	)
-	flag.IntVar(&tempo, "t", 60, "tempo in bpm")
-	flag.IntVar(&tempo, "tempo", 60, "tempo in bpm")
-	flag.IntVar(&beats, "b", 4, "number of beats per measure")
-	flag.IntVar(&beats, "beats", 4, "number of beats per measure")
-	flag.BoolVar(&play, "p", false, "start playing")
-	flag.BoolVar(&play, "play", false, "start playing")
-	flag.Parse()
-
 	m := model{
 		tempo:   clamp(MIN_TEMPO, MAX_TEMPO, tempo),
 		beats:   clamp(MIN_BEATS, MAX_BEATS, beats),
 		playing: play,
 
-		currentBeat:       0,
 		strongPulseBuffer: strongPulseBuffer,
 		weakPulseBuffer:   weakPulseBuffer,
-		help:              help.New(),
+
+		help: help.New(),
 	}
 
 	if _, err := tea.NewProgram(m).Run(); err != nil {
