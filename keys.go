@@ -5,12 +5,14 @@ import (
 )
 
 type KeyMap struct {
-	Up    key.Binding
-	Down  key.Binding
-	Left  key.Binding
-	Right key.Binding
-	Play  key.Binding
-	Quit  key.Binding
+	Up         key.Binding
+	Down       key.Binding
+	Left       key.Binding
+	Right      key.Binding
+	UpByFive   key.Binding
+	DownByFive key.Binding
+	Play       key.Binding
+	Quit       key.Binding
 }
 
 var DefaultKeyMap = KeyMap{
@@ -21,6 +23,15 @@ var DefaultKeyMap = KeyMap{
 	Down: key.NewBinding(
 		key.WithKeys("j", "down"),
 		key.WithHelp("↓", "bpm down"),
+	),
+
+	UpByFive: key.NewBinding(
+		key.WithKeys("K", "shift+up"),
+		key.WithHelp("↑", "bpm up by five"),
+	),
+	DownByFive: key.NewBinding(
+		key.WithKeys("J", "shift+down"),
+		key.WithHelp("↓", "bpm down by five"),
 	),
 	Left: key.NewBinding(
 		key.WithKeys("h", "left"),
