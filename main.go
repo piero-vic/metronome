@@ -17,11 +17,20 @@ import (
 	_ "embed"
 )
 
-//go:embed metronome-strong-pulse.flac
-var strongPulse []byte
+var (
+	//go:embed metronome-strong-pulse.flac
+	strongPulse []byte
+	//go:embed metronome-weak-pulse.flac
+	weakPulse []byte
+)
 
-//go:embed metronome-weak-pulse.flac
-var weakPulse []byte
+const (
+	MIN_BPM = 20
+	MAX_BPM = 240
+
+	MIN_BEATS = 1
+	MAX_BEATS = 10
+)
 
 type tickMsg struct {
 	time time.Time
@@ -81,22 +90,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case key.Matches(msg, DefaultKeyMap.Up):
-			m.bpm = clamp(20, 200, m.bpm+1)
+			m.bpm = clamp(MIN_BPM, MAX_BPM, m.bpm+1)
 
 			return m, nil
 
 		case key.Matches(msg, DefaultKeyMap.Down):
-			m.bpm = clamp(20, 200, m.bpm-1)
+			m.bpm = clamp(MIN_BPM, MAX_BPM, m.bpm-1)
 
 			return m, nil
 
 		case key.Matches(msg, DefaultKeyMap.Right):
-			m.totalBeats = clamp(1, 10, m.totalBeats+1)
+			m.totalBeats = clamp(MIN_BEATS, MAX_BEATS, m.totalBeats+1)
 
 			return m, nil
 
 		case key.Matches(msg, DefaultKeyMap.Left):
-			m.totalBeats = clamp(1, 10, m.totalBeats-1)
+			m.totalBeats = clamp(MIN_BEATS, MAX_BEATS, m.totalBeats-1)
 
 			return m, nil
 
