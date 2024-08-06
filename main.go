@@ -13,9 +13,9 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/gopxl/beep"
-	"github.com/gopxl/beep/flac"
-	"github.com/gopxl/beep/speaker"
+	"github.com/gopxl/beep/v2"
+	"github.com/gopxl/beep/v2/flac"
+	"github.com/gopxl/beep/v2/speaker"
 
 	_ "embed"
 )
