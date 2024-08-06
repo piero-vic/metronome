@@ -101,6 +101,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			return m, nil
 
+		case key.Matches(msg, DefaultKeyMap.UpByFive):
+			m.tempo = clamp(MIN_TEMPO, MAX_TEMPO, m.tempo+5)
+
+			return m, nil
+
+		case key.Matches(msg, DefaultKeyMap.DownByFive):
+			m.tempo = clamp(MIN_TEMPO, MAX_TEMPO, m.tempo-5)
+
+			return m, nil
+
 		case key.Matches(msg, DefaultKeyMap.Right):
 			m.beats = clamp(MIN_BEATS, MAX_BEATS, m.beats+1)
 
